@@ -63,6 +63,7 @@ t$subcategory %>% unique()
 
 t = t %>%
   filter(!subcategory %in% c('Credit Card Payment','Bank Fee','Hide from Budgets & Trends'),
+         !category %in% c('Uncategorized'),
          description!='Venmo') %>%
   mutate(pos_neg = ifelse(subcategory %in% c('Investments','Paycheck','Income','Transfer','Bonus'), 
                           'income', 'expense'))
