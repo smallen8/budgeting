@@ -6,9 +6,13 @@ t$subcategory = t$category
 t$date = mdy(t$date)
 t$year = year(t$date)
 t$month = month(t$date)
+t$yr_mnth = paste0(t$year, '-', t$month)
 t$labels = NULL
 t$notes = NULL
 head(t)
+
+t = t %>%
+  filter(yr_mnth != '2019-3')
 
 t$category = t$subcategory
 t$category = ifelse(t$subcategory %in% c('Auto Insurance','Auto Payment','Gas & Fuel','Parking','Public Transportation','Service & Parts'),
@@ -66,5 +70,29 @@ t = t %>%
          !category %in% c('Uncategorized'),
          description!='Venmo') %>%
   mutate(pos_neg = ifelse(subcategory %in% c('Investments','Paycheck','Income','Transfer','Bonus'), 
-                          'income', 'expense'))
+                          'income', 'expense')) #%>%
+  # mutate(pos_neg = ifelse(subcategory %in% c('ACH Payment TD AMERITRADE CL SEC','Internet Deposit INTERNET XFR FR','Mobile Deposit','Internet Withdrawal INTERNET XFR','ELECTRONIC NEW ACCOUNT FUNDING'),
+  #                         'other', pos_neg))
+t[grep('Bought', t$description),]$pos_neg = 'other'
+t[t$description %in% c('ACH Payment TD AMERITRADE CL SEC','Internet Deposit INTERNET XFR FR',
+                       'Mobile Deposit','Internet Withdrawal INTERNET XFR','ELECTRONIC NEW ACCOUNT FUNDING',
+                       'Td Ameritrade Clearing Inc.','INTERNET WITHDRAWAL Regular Sa'),]$pos_neg = 'other'
+
+
+t %>%
+  filter(pos_neg=='income') %>%
+  filter(yr_mnth=='2019-12')
+
+t %>%
+  filter(pos_neg=='income',
+         year==2019) %>%
+  group_by(year, month, category) %>%
+  summarize(tot_amount=sum(amount)) %>%
+  ggplot() +
+  geom_col(aes(month, tot_amount))
+
+
+
+
+
 
