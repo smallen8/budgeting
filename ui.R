@@ -4,13 +4,20 @@ library(DT)
 library(reshape2)
 library(dplyr)
 
+source('appFunctions.R')
+
 spendingCategoriesSelected <- c('Auto & Transport','Bills & Utilities','Entertainment','Food & Dining','Gifts & Donations','Health & Fitness','Home','Income','Shopping','Travel')
 startDate <- min(df3$date)
 endDate <- max(df3$date)
 
-# summaryTab <- fluidPage(
-# 
-# )
+allYearMonths <- df3 %>% distinct(year_month) %>% mutate(temp = 1)
+allCategories <- df3 %>% distinct(category) %>% mutate(temp = 1)
+allIncomeSubcategories <- df3 %>% filter(transaction_type=='credit') %>% distinct(subcategory) %>% mutate(temp = 1)
+
+summaryTab <- fluidPage(
+  plotOutput('summaryPlot'),
+  DTOutput('summaryDf')
+)
 
 cashFlowTab <- fluidPage(
   fluidRow(column(width=6,
@@ -84,7 +91,7 @@ shinyUI(fluidPage(
     titlePanel("Team Zack and Sarah Budget"),
 
     tabsetPanel(
-      # tabPanel('Summary', summaryTab),
+      tabPanel('Summary', summaryTab),
       tabPanel('Cash Flow', cashFlowTab),
       tabPanel('Spending', spendingTab),
       tabPanel('Income', incomeTab)

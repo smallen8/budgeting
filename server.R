@@ -3,6 +3,19 @@ library(shiny)
 shinyServer(function(input, output) {
 
   # summary tab
+  output$summaryDf <- renderDT({
+    getSummary(df3)
+  })
+  
+  output$summaryPlot <- renderPlot({
+    getSummary(df3) %>%
+      mutate(Category = as.factor(Category)) %>%
+      ggplot() +
+      geom_col(aes(reorder(Category, Amount), Amount)) +
+      geom_point(aes(Category, `Average Amount`), color='red', size=3) +
+      coord_flip() +
+      xlab('Category') + ylab('$') + ggtitle("Spending This Month Compared to Average")
+  })
   
   
   # cash flow tab
@@ -168,7 +181,7 @@ shinyServer(function(input, output) {
       ungroup() %>%
       arrange(-amount) %>%
       select(`Income Description` = income_description,
-             Amount = amount)
+             `YTD Amount` = amount)
   })
   
   

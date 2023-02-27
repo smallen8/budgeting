@@ -77,69 +77,102 @@ df3 <- cleanData(filename)
 # allow user to import new transactions csv into app, clean up within the app, and immediately summarize
 
 
-df3 %>%
-  group_by(year_month, category) %>% 
-  summarize(amount = sum(amount)) %>%
-  filter(category %in% c('Auto & Transport','Bills & Utilities','Entertainment','Food & Dining','Gifts & Donations','Health & Fitness','Home','Income','Shopping','Travel')) %>%
-  ggplot() + 
-  geom_col(aes(year_month, amount)) +
-  facet_wrap(~category, scales='free')
-
-
-df3 %>%
-  filter(year_month=='202301') %>%
-  arrange(date) %>%
-  View()
-df2 %>%
-  filter(year_month=='202301') %>%
-  arrange(date) %>%
-  View()
-
-df2 %>%
-  filter(category=='Dividend & Cap Gains') %>%
-  View()
-# filter(!category %in% c('Investments','Credit Card Payment','Transfer','Dividend & Cap Gains','Trade Commissions','Interest Income'))
-
+getSummary <- function(df3) {
+  
+  averageByCategory <- df3 %>% 
+    group_by(year_month, category) %>% 
+    summarize(amount = sum(amount)) %>%
+    bind_rows(left_join(allYearMonths, allCategories) %>%
+                mutate(amount = 0) %>%
+                select(-temp)) %>%
+    group_by(year_month, category) %>% 
+    summarize(amount = sum(amount)) %>%
+    group_by(category) %>%
+    summarize(avg_amount = mean(amount)) %>%
+    arrange(desc(avg_amount))
+  
+  summary <- df3 %>%
+    filter(date>=floor_date(Sys.Date(), unit='month')) %>% # filter on this month
+    group_by(year_month, category) %>%
+    summarize(amount = sum(amount)) %>%
+    ungroup() %>%
+    left_join(averageByCategory, by='category') %>%
+    mutate(amount = round(amount),
+           avg_amount = round(avg_amount),
+           amount_above_average = amount - avg_amount) %>%
+    select(Month = year_month,
+           Category = category,
+           Amount = amount,
+           `Average Amount` = avg_amount,
+           `Amount Above Average` = amount_above_average)
+  
+  return(summary)
+}
 
 
 # df3 %>%
-#   filter(subcategory %in% c('Paycheck','Deposit','Dividend & Cap Gains')) %>%
-#   mutate(income_description = case_when(toupper(description) %like% '%HIGHMARK%' ~ 'Sarah Income',
-#                                         toupper(description) %like% '%BAKER%' ~ 'Zack Income',
-#                                         account_name=='Michael Baker International 401(k) Plan' ~ 'Zack 401K',
-#                                         account_name=='401K Account' ~ 'Sarah 401K',
-#                                         TRUE ~ 'Other')) %>%
-#   filter(year_month=='202202',
-#          income_description=='Other') %>%
+#   group_by(year_month, category) %>% 
+#   summarize(amount = sum(amount)) %>%
+#   filter(category %in% c('Auto & Transport','Bills & Utilities','Entertainment','Food & Dining','Gifts & Donations','Health & Fitness','Home','Income','Shopping','Travel')) %>%
+#   ggplot() + 
+#   geom_col(aes(year_month, amount)) +
+#   facet_wrap(~category, scales='free')
+# 
+# 
+# df3 %>%
+#   filter(year_month=='202301') %>%
+#   arrange(date) %>%
 #   View()
-
-
-# summarize spending
-
-
-
-
-
-
-savings <- df3 %>%
-  mutate(amount = ifelse(transaction_type=='credit', amount, -amount)) %>%
-  group_by(year_month) %>%
-  summarize(amount = sum(amount)) %>%
-  mutate(category = 'Savings')
-head(savings)
-
-df3 %>%
-  # filter(date>=input$dateRange[1],
-  #        date<=input$dateRange[2]) %>%
-  filter(transaction_type=='debit') %>%
-  # filter(category %in% input$spendingCategories) %>%
-  filter(category %in% c('Auto & Transport','Bills & Utilities','Entertainment','Food & Dining','Gifts & Donations','Health & Fitness','Home','Income','Shopping','Travel')) %>%
-  group_by(year_month, category) %>%
-  summarize(amount = sum(amount)) %>%
-  ungroup() %>%
-  bind_rows(savings) %>%
-  ggplot() +
-  geom_col(aes(year_month, amount, fill=category), position='fill') +
-  scale_fill_brewer(palette="Set3", name = 'Category') +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  xlab('Month') + ylab('$') + ggtitle('Spending by Month and Category')
+# df2 %>%
+#   filter(year_month=='202301') %>%
+#   arrange(date) %>%
+#   View()
+# 
+# df2 %>%
+#   filter(category=='Dividend & Cap Gains') %>%
+#   View()
+# # filter(!category %in% c('Investments','Credit Card Payment','Transfer','Dividend & Cap Gains','Trade Commissions','Interest Income'))
+# 
+# 
+# 
+# # df3 %>%
+# #   filter(subcategory %in% c('Paycheck','Deposit','Dividend & Cap Gains')) %>%
+# #   mutate(income_description = case_when(toupper(description) %like% '%HIGHMARK%' ~ 'Sarah Income',
+# #                                         toupper(description) %like% '%BAKER%' ~ 'Zack Income',
+# #                                         account_name=='Michael Baker International 401(k) Plan' ~ 'Zack 401K',
+# #                                         account_name=='401K Account' ~ 'Sarah 401K',
+# #                                         TRUE ~ 'Other')) %>%
+# #   filter(year_month=='202202',
+# #          income_description=='Other') %>%
+# #   View()
+# 
+# 
+# # summarize spending
+# 
+# 
+# 
+# 
+# 
+# 
+# savings <- df3 %>%
+#   mutate(amount = ifelse(transaction_type=='credit', amount, -amount)) %>%
+#   group_by(year_month) %>%
+#   summarize(amount = sum(amount)) %>%
+#   mutate(category = 'Savings')
+# head(savings)
+# 
+# df3 %>%
+#   # filter(date>=input$dateRange[1],
+#   #        date<=input$dateRange[2]) %>%
+#   filter(transaction_type=='debit') %>%
+#   # filter(category %in% input$spendingCategories) %>%
+#   filter(category %in% c('Auto & Transport','Bills & Utilities','Entertainment','Food & Dining','Gifts & Donations','Health & Fitness','Home','Income','Shopping','Travel')) %>%
+#   group_by(year_month, category) %>%
+#   summarize(amount = sum(amount)) %>%
+#   ungroup() %>%
+#   bind_rows(savings) %>%
+#   ggplot() +
+#   geom_col(aes(year_month, amount, fill=category), position='fill') +
+#   scale_fill_brewer(palette="Set3", name = 'Category') +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+#   xlab('Month') + ylab('$') + ggtitle('Spending by Month and Category')
