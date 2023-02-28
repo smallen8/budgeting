@@ -2,13 +2,18 @@ library(shiny)
 
 shinyServer(function(input, output) {
 
+  observeEvent(input$cleanData, {
+    req(input$mintDataUpload$datapath)
+    mintData <<- cleanData(input$mintDataUpload$datapath)
+  })
+  
   # summary tab
   output$summaryDf <- renderDT({
-    getSummary(df3)
+    getSummary(mintData)
   })
   
   output$summaryPlot <- renderPlot({
-    getSummary(df3) %>%
+    getSummary(mintData) %>%
       mutate(Category = as.factor(Category)) %>%
       ggplot() +
       geom_col(aes(reorder(Category, Amount), Amount)) +
@@ -20,7 +25,7 @@ shinyServer(function(input, output) {
   
   # cash flow tab
   output$incomeVsSpending <- renderPlot({
-    df3 %>%
+    mintData %>%
       filter(date>=input$dateRangeCashFlow[1],
              date<=input$dateRangeCashFlow[2],
              category %in% input$spendingCategoriesCashFlow) %>%
@@ -35,7 +40,7 @@ shinyServer(function(input, output) {
   })
   
   output$netIncome <- renderPlot({
-    df3 %>%
+    mintData %>%
       filter(date>=input$dateRangeCashFlow[1],
              date<=input$dateRangeCashFlow[2],
              category %in% input$spendingCategoriesCashFlow) %>%
@@ -51,7 +56,7 @@ shinyServer(function(input, output) {
   })
   
   output$incomeVsSpendingDf <- renderDT({
-    df3 %>%
+    mintData %>%
       filter(date>=input$dateRangeCashFlow[1],
              date<=input$dateRangeCashFlow[2],
              category %in% input$spendingCategoriesCashFlow) %>%
@@ -66,7 +71,7 @@ shinyServer(function(input, output) {
   })
 
   output$spendingSummary <- renderPlot({
-    savings <- df3 %>%
+    savings <- mintData %>%
       filter(date>=input$dateRangeSpending[1],
              date<=input$dateRangeSpending[2]) %>%
       mutate(amount = ifelse(transaction_type=='credit', amount, -amount)) %>%
@@ -75,7 +80,7 @@ shinyServer(function(input, output) {
       mutate(category = 'Savings') %>%
       mutate(amount = ifelse(amount<0, 0, amount))
     
-    temp <- df3 %>%
+    temp <- mintData %>%
       filter(date>=input$dateRangeSpending[1],
              date<=input$dateRangeSpending[2],
              category %in% input$spendingCategoriesSpending) %>%
@@ -97,7 +102,7 @@ shinyServer(function(input, output) {
   })
   
   output$spendingSummaryDf <- renderDT({
-    averageByCategory <- df3 %>% 
+    averageByCategory <- mintData %>% 
       group_by(year_month, category) %>% 
       summarize(amount = sum(amount)) %>%
       bind_rows(left_join(allYearMonths, allCategories) %>%
@@ -109,7 +114,7 @@ shinyServer(function(input, output) {
       summarize(avg_amount = mean(amount)) %>%
       arrange(desc(avg_amount))
     
-    df3 %>%
+    mintData %>%
       filter(date>=input$dateRangeSpending[1],
              date<=input$dateRangeSpending[2],
              category %in% input$spendingCategoryDrilldown) %>%
@@ -129,7 +134,7 @@ shinyServer(function(input, output) {
   })
   
   output$spendingSummarySubcategory <- renderPlot({
-    df3 %>%
+    mintData %>%
       filter(date>=input$dateRangeSpending[1],
              date<=input$dateRangeSpending[2],
              category==input$spendingCategoryDrilldown) %>%
@@ -146,7 +151,7 @@ shinyServer(function(input, output) {
   
   # income tab
   output$incomeSummary <- renderPlot({
-    df3 %>%
+    mintData %>%
       filter(date>=input$dateRangeIncome[1],
              date<=input$dateRangeIncome[2]) %>%
       filter(subcategory %in% c('Paycheck','Deposit','Dividend & Cap Gains')) %>%
@@ -167,7 +172,7 @@ shinyServer(function(input, output) {
   })
   
   output$incomeYTDSummaryDf <- renderDT({
-    df3 %>%
+    mintData %>%
       filter(date>=floor_date(Sys.Date(), unit='year')) %>%
       filter(subcategory %in% c('Paycheck','Deposit','Dividend & Cap Gains')) %>%
       mutate(income_description = case_when(toupper(description) %like% '%HIGHMARK%' ~ 'Sarah Income',

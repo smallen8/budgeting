@@ -1,9 +1,3 @@
-library(lubridate)
-library(dplyr)
-library(ggplot2)
-library(DescTools)
-theme_set(theme_minimal())
-
 cleanData <- function(filename) {
   # filename <- 'C:/Users/zacka/OneDrive/Documents/Budgeting/transactions.csv'
   
@@ -72,8 +66,8 @@ cleanData <- function(filename) {
   return(df3)  
 }
 
-filename <- 'C:/Users/zacka/OneDrive/Documents/Budgeting/transactions.csv'
-df3 <- cleanData(filename)
+# filename <- 'C:/Users/zacka/OneDrive/Documents/Budgeting/transactions.csv'
+# df3 <- cleanData(filename)
 # allow user to import new transactions csv into app, clean up within the app, and immediately summarize
 
 

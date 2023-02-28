@@ -1,18 +1,7 @@
-library(shiny)
-library(DT)
-# library(plotly)
-library(reshape2)
-library(dplyr)
-
-source('appFunctions.R')
-
-spendingCategoriesSelected <- c('Auto & Transport','Bills & Utilities','Entertainment','Food & Dining','Gifts & Donations','Health & Fitness','Home','Income','Shopping','Travel')
-startDate <- min(df3$date)
-endDate <- max(df3$date)
-
-allYearMonths <- df3 %>% distinct(year_month) %>% mutate(temp = 1)
-allCategories <- df3 %>% distinct(category) %>% mutate(temp = 1)
-allIncomeSubcategories <- df3 %>% filter(transaction_type=='credit') %>% distinct(subcategory) %>% mutate(temp = 1)
+adminTab <- fluidPage(
+  fileInput(inputId = 'mintDataUpload', label = 'Select Mint file'),
+  actionButton(inputId = 'cleanData', label = 'Upload File')
+)
 
 summaryTab <- fluidPage(
   plotOutput('summaryPlot'),
@@ -91,6 +80,7 @@ shinyUI(fluidPage(
     titlePanel("Team Zack and Sarah Budget"),
 
     tabsetPanel(
+      tabPanel('Admin', adminTab),
       tabPanel('Summary', summaryTab),
       tabPanel('Cash Flow', cashFlowTab),
       tabPanel('Spending', spendingTab),
