@@ -1,4 +1,4 @@
-cleanData <- function(filename) {
+cleanData <- function(filename, randomize = F) {
   # filename <- 'C:/Users/zacka/OneDrive/Documents/Budgeting/transactions.csv'
   
   # read in data
@@ -41,27 +41,27 @@ cleanData <- function(filename) {
                                 subcategory %in% c('Travel','Air Travel','Hotel','Rental Car & Taxi','Vacation') ~ 'Travel',
                                 subcategory %in% c('Uncategorized','Cash & ATM','Check') ~ 'Uncategorized',
                                 TRUE ~ subcategory)) %>%
-    filter(!subcategory %in% c('Buy','Sell'))
+    mutate(income_description = case_when(toupper(description) %like% '%HIGHMARK%' ~ 'Sarah Income',
+                                          toupper(description) %like% '%BAKER%' ~ 'Zack Income',
+                                          toupper(description) %like% '%DIVIDEND%' ~ 'Dividend & Cap Gains',
+                                          account_name=='Michael Baker International 401(k) Plan' ~ 'Zack 401K',
+                                          account_name=='401K Account' ~ 'Sarah 401K',
+                                          TRUE ~ 'Other')) %>%
+    filter(!subcategory %in% c('Buy','Sell')) %>%
+    select(date, year, month, year_month, description, income_description, category, subcategory, amount, transaction_type)
   
-  allYearMonths <- df3 %>% distinct(year_month) %>% mutate(temp = 1)
-  allCategories <- df3 %>% distinct(category) %>% mutate(temp = 1)
-  allIncomeSubcategories <- df3 %>% filter(transaction_type=='credit') %>% distinct(subcategory) %>% mutate(temp = 1)
+  if(randomize==TRUE) {
+    df3 <- df3 %>%
+      mutate(random = round(abs(rnorm(nrow(df3), mean = 20, sd = 50)), 2)) %>%
+      group_by(year_month) %>%
+      filter(row_number()<=50) %>%
+      ungroup() %>%
+      mutate(amount = ifelse(transaction_type=='debit', random, random*10))
+  }
   
-  averageByCategory <- df3 %>% 
-    group_by(year_month, category) %>% 
-    summarize(amount = sum(amount)) %>%
-    bind_rows(left_join(allYearMonths, allCategories) %>%
-                mutate(amount = 0) %>%
-                select(-temp)) %>%
-    group_by(year_month, category) %>% 
-    summarize(amount = sum(amount)) %>%
-    group_by(category) %>%
-    summarize(avg_amount = mean(amount)) %>%
-    arrange(desc(avg_amount))
-
-  # export cleaned data
-  write.csv(df3, 'C:/Users/zacka/OneDrive/Documents/Budgeting/transactions_clean.csv', row.names = F)
-  write.csv(averageByCategory, 'C:/Users/zacka/OneDrive/Documents/Budgeting/transactions_average.csv', row.names = F)
+  # # export cleaned data
+  # write.csv(df3, 'C:/Users/zacka/OneDrive/Documents/Budgeting/transactions_clean.csv', row.names = F)
+  # write.csv(averageByCategory, 'C:/Users/zacka/OneDrive/Documents/Budgeting/transactions_average.csv', row.names = F)
 
   return(df3)  
 }
@@ -71,21 +71,11 @@ cleanData <- function(filename) {
 # allow user to import new transactions csv into app, clean up within the app, and immediately summarize
 
 
-getSummary <- function(df3) {
+getSummary <- function(mintData) {
   
-  averageByCategory <- df3 %>% 
-    group_by(year_month, category) %>% 
-    summarize(amount = sum(amount)) %>%
-    bind_rows(left_join(allYearMonths, allCategories) %>%
-                mutate(amount = 0) %>%
-                select(-temp)) %>%
-    group_by(year_month, category) %>% 
-    summarize(amount = sum(amount)) %>%
-    group_by(category) %>%
-    summarize(avg_amount = mean(amount)) %>%
-    arrange(desc(avg_amount))
+  averageByCategory <- getAverageByCategory(mintData)
   
-  summary <- df3 %>%
+  summary <- mintData %>%
     filter(date>=floor_date(Sys.Date(), unit='month')) %>% # filter on this month
     group_by(year_month, category) %>%
     summarize(amount = sum(amount)) %>%
@@ -103,6 +93,26 @@ getSummary <- function(df3) {
   return(summary)
 }
 
+getAverageByCategory <- function(mintData) {
+  
+  allYearMonths <- mintData %>% distinct(year_month) %>% mutate(temp = 1)
+  allCategories <- mintData %>% distinct(category) %>% mutate(temp = 1)
+  allIncomeSubcategories <- mintData %>% filter(transaction_type=='credit') %>% distinct(subcategory) %>% mutate(temp = 1)
+  
+  averageByCategory <- mintData %>% 
+    group_by(year_month, category) %>% 
+    summarize(amount = sum(amount)) %>%
+    bind_rows(left_join(allYearMonths, allCategories) %>%
+                mutate(amount = 0) %>%
+                select(-temp)) %>%
+    group_by(year_month, category) %>% 
+    summarize(amount = sum(amount)) %>%
+    group_by(category) %>%
+    summarize(avg_amount = mean(amount)) %>%
+    arrange(desc(avg_amount))
+  
+  return(averageByCategory)
+}
 
 # df3 %>%
 #   group_by(year_month, category) %>% 

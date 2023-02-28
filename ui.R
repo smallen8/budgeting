@@ -20,8 +20,8 @@ cashFlowTab <- fluidPage(
            column(width=6,
                   selectInput(inputId = 'spendingCategoriesCashFlow', multiple = TRUE, 
                               label = 'Spending Categories', 
-                              choices = sort(unique(df3$category)),
-                              selected = unique(df3$category))
+                              choices = sort(unique(mintData$category)),
+                              selected = unique(mintData$category))
                   )),
   plotOutput('incomeVsSpending'),
   plotOutput('netIncome'),
@@ -39,7 +39,7 @@ spendingTab <- fluidPage(
            column(6,
                   selectInput(inputId = 'spendingCategoriesSpending', multiple = TRUE,
                               label = 'Spending Categories',
-                              choices = sort(unique(df3$category)),
+                              choices = sort(unique(mintData$category)),
                               selected = spendingCategoriesSelected)
   )),
 
@@ -53,7 +53,7 @@ spendingTab <- fluidPage(
   fluidRow(column(3,
                   selectInput(inputId = 'spendingCategoryDrilldown', multiple = FALSE, 
                               label = 'Spending Category',
-                              choices = sort(unique(df3$category)),
+                              choices = sort(unique(mintData$category)),
                               selected = 'Food & Dining',
                               selectize = FALSE)),
            column(9, plotOutput('spendingSummarySubcategory'))),

@@ -102,17 +102,7 @@ shinyServer(function(input, output) {
   })
   
   output$spendingSummaryDf <- renderDT({
-    averageByCategory <- mintData %>% 
-      group_by(year_month, category) %>% 
-      summarize(amount = sum(amount)) %>%
-      bind_rows(left_join(allYearMonths, allCategories) %>%
-                  mutate(amount = 0) %>%
-                  select(-temp)) %>%
-      group_by(year_month, category) %>% 
-      summarize(amount = sum(amount)) %>%
-      group_by(category) %>%
-      summarize(avg_amount = mean(amount)) %>%
-      arrange(desc(avg_amount))
+    averageByCategory <- getAverageByCategory(mintData)
     
     mintData %>%
       filter(date>=input$dateRangeSpending[1],
@@ -155,12 +145,6 @@ shinyServer(function(input, output) {
       filter(date>=input$dateRangeIncome[1],
              date<=input$dateRangeIncome[2]) %>%
       filter(subcategory %in% c('Paycheck','Deposit','Dividend & Cap Gains')) %>%
-      mutate(income_description = case_when(toupper(description) %like% '%HIGHMARK%' ~ 'Sarah Income',
-                                            toupper(description) %like% '%BAKER%' ~ 'Zack Income',
-                                            toupper(description) %like% '%DIVIDEND%' ~ 'Dividend & Cap Gains',
-                                            account_name=='Michael Baker International 401(k) Plan' ~ 'Zack 401K',
-                                            account_name=='401K Account' ~ 'Sarah 401K',
-                                            TRUE ~ 'Other')) %>%
       group_by(year_month, income_description) %>%
       summarize(amount = sum(amount)) %>%
       ungroup() %>%
@@ -175,12 +159,6 @@ shinyServer(function(input, output) {
     mintData %>%
       filter(date>=floor_date(Sys.Date(), unit='year')) %>%
       filter(subcategory %in% c('Paycheck','Deposit','Dividend & Cap Gains')) %>%
-      mutate(income_description = case_when(toupper(description) %like% '%HIGHMARK%' ~ 'Sarah Income',
-                                            toupper(description) %like% '%BAKER%' ~ 'Zack Income',
-                                            toupper(description) %like% '%DIVIDEND%' ~ 'Dividend & Cap Gains',
-                                            account_name=='Michael Baker International 401(k) Plan' ~ 'Zack 401K',
-                                            account_name=='401K Account' ~ 'Sarah 401K',
-                                            TRUE ~ 'Other')) %>%
       group_by(income_description) %>%
       summarize(amount = sum(amount)) %>%
       ungroup() %>%
